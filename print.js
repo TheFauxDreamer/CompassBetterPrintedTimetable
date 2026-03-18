@@ -123,7 +123,28 @@ function generateTimetable(data) {
     }
     
     const periodsData = data.periods.d;
-    const events = data.events.d;
+    
+    // Filter out unwanted events like meetings and sickbay before processing
+    const events = data.events.d.filter(event => {
+        const title = (event.title || '').toLowerCase();
+        const subject = (event.subjectLongName || '').toLowerCase();
+        
+        // Check for keywords (add or remove keywords here as needed)
+        const isUnwanted = 
+            title.includes('meeting') || 
+            subject.includes('meeting') || 
+            title.includes('withdrawn') || 
+            subject.includes('withdrawn') ||
+            title.includes('withdrawl') || 
+            subject.includes('withdrawl') ||
+            title.includes('sickbay') || 
+            subject.includes('sickbay') ||
+            title.includes('sick bay') ||
+            subject.includes('sick bay');
+            
+        // Keep the event only if it's NOT unwanted
+        return !isUnwanted;
+    });
     
     console.log('[Timetable Print] Processing', events.length, 'events');
 

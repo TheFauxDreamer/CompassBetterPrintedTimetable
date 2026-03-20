@@ -41,12 +41,24 @@
     }
   });
 
+  // Function to detect if the current profile is a staff member
+  function detectIsStaff() {
+    const chipLabels = document.querySelectorAll('.MuiChip-label');
+    for (const label of chipLabels) {
+      if (label.textContent.trim() === 'Staff') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Function to extract student information from the page
   function extractStudentInfo() {
     const studentInfo = {
       name: '',
       yearGroup: '',
-      faction: ''
+      faction: '',
+      isStaff: detectIsStaff()
     };
 
     // Extract student name from h1

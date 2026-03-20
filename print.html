@@ -189,6 +189,14 @@
             font-weight: 500;
         }
 
+        .lunch-duty {
+            background: #fff3e0 !important;
+        }
+
+        body.bw-mode .lunch-duty {
+            background: #fff !important;
+        }
+
         .covered-class {
             background: #ffebee !important;
         }
@@ -278,6 +286,12 @@
             }
 
             body:not(.bw-mode) .lunch-break {
+                background: #fff3e0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            body:not(.bw-mode) .lunch-duty {
                 background: #fff3e0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;

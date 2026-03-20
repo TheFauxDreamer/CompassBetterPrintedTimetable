@@ -7,7 +7,7 @@ function initializePrint() {
     // Primary method: Get data from chrome storage
     if (chrome && chrome.storage && chrome.storage.local) {
         console.log('[Timetable Print] Attempting to get data from chrome storage');
-        chrome.storage.local.get(['periodsData', 'eventsData', 'studentInfo'], function(result) {
+        chrome.storage.local.get(['periodsData', 'eventsData', 'studentInfo', 'quickPrint'], function(result) {
             console.log('[Timetable Print] Chrome storage result:', {
                 hasPeriodsData: !!result.periodsData,
                 hasEventsData: !!result.eventsData,
@@ -16,12 +16,22 @@ function initializePrint() {
             
             if (result.periodsData && result.eventsData) {
                 console.log('[Timetable Print] Data retrieved successfully');
+                const studentInfo = result.studentInfo || {};
                 const data = {
                     periods: result.periodsData,
                     events: result.eventsData,
-                    studentInfo: result.studentInfo || {}
+                    studentInfo: studentInfo,
+                    isStaff: !!studentInfo.isStaff
                 };
                 generateTimetable(data);
+
+                // Quick print: open print dialogue immediately
+                if (result.quickPrint) {
+                    // Hide controls since we're going straight to print
+                    const controls = document.querySelector('.controls');
+                    if (controls) controls.style.display = 'none';
+                    window.print();
+                }
             } else {
                 console.error('[Timetable Print] No data in storage');
                 showNoData();
@@ -129,24 +139,30 @@ function generateTimetable(data) {
         const title = (event.title || '').toLowerCase();
         const subject = (event.subjectLongName || '').toLowerCase();
         
+        // Check for excursion background colour (#ccffcc)
+        const bgColor = (event.backgroundColor || event.bc || '').toLowerCase().replace(/\s/g, '');
+        const isExcursion = bgColor === '#ccffcc';
+
         // Check for keywords (add or remove keywords here as needed)
-        const isUnwanted = 
-            title.includes('meeting') || 
-            subject.includes('meeting') || 
-            title.includes('withdrawn') || 
+        const isUnwanted =
+            isExcursion ||
+            title.includes('meeting') ||
+            subject.includes('meeting') ||
+            title.includes('withdrawn') ||
             subject.includes('withdrawn') ||
-            title.includes('withdrawl') || 
+            title.includes('withdrawl') ||
             subject.includes('withdrawl') ||
-            title.includes('sickbay') || 
+            title.includes('sickbay') ||
             subject.includes('sickbay') ||
             title.includes('sick bay') ||
             subject.includes('sick bay');
-            
+
         // Keep the event only if it's NOT unwanted
         return !isUnwanted;
     });
     
-    console.log('[Timetable Print] Processing', events.length, 'events');
+    const isStaff = !!data.isStaff;
+    console.log('[Timetable Print] Processing', events.length, 'events', isStaff ? '(staff mode)' : '(student mode)');
 
     // Build a map of all periods with their details (including lunch breaks)
     const periodDefinitions = {};
@@ -198,7 +214,7 @@ function generateTimetable(data) {
             console.log('[Timetable Print] Looking for period for event at', formatTime(event.start), '(', eventTimeInMinutes, 'minutes)');
             
             for (const [pKey, periodDef] of Object.entries(periodDefinitions[dayKey])) {
-                if (periodDef.isLunch) continue; // Skip lunch periods
+                if (periodDef.isLunch && !isStaff) continue; // Skip lunch periods for students
                 
                 const periodStart = new Date(periodDef.start);
                 const periodFinish = new Date(periodDef.finish);
@@ -315,8 +331,28 @@ function generateTimetable(data) {
         sortedDays.forEach(dayKey => {
             const events = eventsByDayAndPeriod[dayKey] ? eventsByDayAndPeriod[dayKey][periodKey] : null;
             
-            if (isLunch) {
-                // This is a lunch period
+            if (isLunch && isStaff && events && events.length > 0) {
+                // Staff member with a lunch duty - show the duty instead of generic lunch
+                html += `<td class="class-cell lunch-duty">`;
+                const sortedEvents = events.sort((a, b) =>
+                    new Date(a.start) - new Date(b.start)
+                );
+                sortedEvents.forEach((event, index) => {
+                    if (index > 0) {
+                        html += `<div class="class-separator"></div>`;
+                    }
+                    if (event.subjectLongName) {
+                        html += `<div class="subject-name">${event.subjectLongName}</div>`;
+                    }
+                    html += `<div class="subject-code">${event.title || '-'}</div>`;
+                    const location = event.locations && event.locations[0] ? event.locations[0].locationName : '';
+                    if (location) {
+                        html += `<div class="location"><strong>Room:</strong> ${location}</div>`;
+                    }
+                });
+                html += `</td>`;
+            } else if (isLunch) {
+                // Student or staff with no duty - show generic lunch
                 html += `<td class="lunch-break">Lunch</td>`;
             } else if (events && events.length > 0) {
                 // Sort events by start time so they appear in chronological order
@@ -394,7 +430,7 @@ function generateTimetable(data) {
             headerText += details.join(', ');
         }
     } else {
-        headerText = 'Student Timetable';
+        headerText = isStaff ? 'Staff Timetable' : 'Student Timetable';
     }
     
     document.querySelector('.header h1').textContent = headerText;

@@ -61,8 +61,8 @@
       isStaff: detectIsStaff()
     };
 
-    // Extract student name from h1
-    const nameElement = document.querySelector('h1.MuiTypography-headerLg');
+    // Extract student name from h1 (class varies between headerLg and headerMd across platforms)
+    const nameElement = document.querySelector('h1[class*="MuiTypography-header"]');
     if (nameElement) {
       studentInfo.name = nameElement.textContent.trim();
     }

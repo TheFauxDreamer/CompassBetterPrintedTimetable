@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Timetable Printer",
-  "version": "1.7",
+  "version": "1.9",
   "description": "Print student and staff timetables from the student information system",
   "permissions": [
     "activeTab",
@@ -19,7 +19,17 @@
       "run_at": "document_start"
     }
   ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "action": {
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    },
     "default_title": "Timetable Printer Settings",
     "default_popup": "popup.html"
   },
